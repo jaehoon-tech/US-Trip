@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- PWA (웹앱) 설치 및 아이콘 설정 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="금쪽이여행">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🇺🇸</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232563eb%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22>🇺🇸</text></svg>">
+
+    <title>🇺🇸 미국 서부 금쪽이들 로드트립</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --accent: #f59e0b;
+            --bg-light: #f8fafc;
+            --text-main: #0f172a;
+            --text-sub: #475569;
+            --border: #e2e8f0;
+            --bottom-nav-height: 60px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #cbd5e1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden; /* 앱처럼 화면 고정 */
+        }
+
+        /* 📱 모바일 에뮬레이터 래퍼 */
+        #mobile-wrapper {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            background-color: var(--bg-light);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        @media (min-width: 481px) {
+            #mobile-wrapper {
+                height: 90vh;
+                border-radius: 20px;
+            }
+        }
+
+        /* 1. D-Day 최상단 배너 */
+        #dday-banner {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            color: white;
+            text-align: center;
+            padding: 16px 10px;
+            font-weight: 900;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+            flex-shrink: 0;
+        }
+
+        /* 글로벌 필터 바 */
+        #filter-bar-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            z-index: 100;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border);
+        }
+        #filter-bar-container::-webkit-scrollbar { display: none; }
+        
+        .chip {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: white;
+            border: 1px solid #cbd5e1;
+            color: var(--text-sub);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+        }
+
+        /* 탭 뷰 컨테이너 */
+        #tab-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tab-view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            background: var(--bg-light);
+            display: none;
+            flex-direction: column;
+            padding-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tab-view.active {
+            display: flex;
+        }
+
+        /* ==== [탭 1] 일정 뷰 ==== */
+        #view-schedule {
+            padding: 16px;
+        }
+        .summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .summary-card h3 {
+            font-size: 16px;
+            color: var(--secondary);
+            margin-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 8px;
+        }
+        .summary-list {
+            list-style: none;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .summary-list li { margin-bottom: 6px; }
+        .highlight-text { color: #dc2626; font-weight: bold; }
+
+        .day-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .day-card.hidden { display: none; }
+        .day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .day-title { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+        .btn-route { background: #eef2ff; color: var(--primary); border: 1px solid #c7d2fe; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+
+        /* 타임라인 UI */
+        .timeline { position: relative; padding-left: 8px; margin-top: 16px; }
+        .timeline::before { content: ''; position: absolute; top: 24px; bottom: 40px; left: 22px; width: 2px; border-left: 2px dotted #c084fc; z-index: 0; }
+        .timeline-item { position: relative; display: flex; flex-direction: column; margin-bottom: 20px; z-index: 1; }
+        .timeline-content { display: flex; justify-content: space-between; padding-left: 50px; gap: 12px; }
+        .timeline-number { position: absolute; left: 9px; top: 0; width: 28px; height: 28px; border-radius: 50%; background-color: #9333ea; color: white; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 2px 4px rgba(147, 51, 234, 0.3); }
+        .timeline-info { flex: 1; }
+        .timeline-title { font-size: 15px; font-weight: 700; color: #581c87; margin-bottom: 4px; }
+        .timeline-desc { font-size: 13px; color: #475569; margin-bottom: 6px; line-height: 1.4; }
+        .timeline-distance { padding-left: 50px; font-size: 12px; color: #64748b; margin-top: 10px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+        .btn-gmap, .btn-copy { background: #fff; border-radius: 6px; font-size: 11px; font-weight: bold; text-decoration: none; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
+        .btn-gmap { color: #ea4335; border: 1px solid #ea4335; }
+        .btn-copy { color: #475569; border: 1px solid #cbd5e1; background: #f1f5f9; }
+        .drive-badge { background: #f1f5f9; color: #0f172a; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-left: 4px solid var(--primary); }
+
+        /* ==== [탭 2] 지도 뷰 ==== */
+        #map { width: 100%; height: 100%; background-color: #e5e3df; }
+
+        /* ==== [탭 3] 체크리스트 뷰 ==== */
+        #view-checklist { padding: 20px 16px; }
+        .checklist-group { background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .checklist-group h3 { font-size: 15px; color: var(--secondary); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 6px; }
+        .check-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px dashed #f1f5f9; }
+        .check-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .check-item input[type="checkbox"] { width: 20px; height: 20px; margin-right: 12px; accent-color: var(--primary); }
+        .check-item label { font-size: 14px; color: var(--text-main); flex: 1; line-height: 1.4; cursor: pointer; }
+        .check-item input[type="checkbox"]:checked + label { text-decoration: line-through; color: #94a3b8; }
+
+        /* ==== [탭 4] 정산 뷰 ==== */
+        #view-expense { padding: 20px 16px; }
+        .exp-summary { background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .exp-label { font-size: 13px; opacity: 0.9; margin-bottom: 4px; }
+        .exp-value { font-size: 24px; font-weight: 800; margin-bottom: 16px; }
+        .exp-value.small { font-size: 18px; margin-bottom: 0; }
+        
+        .exp-form { background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 12px; }
+        .form-input { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; }
+        .form-input:focus { border-color: var(--primary); }
+        .btn-add-exp { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
+        
+        .exp-list-container { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .exp-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+        .exp-item:last-child { border-bottom: none; }
+        .exp-info { flex: 1; }
+        .exp-name { font-size: 14px; font-weight: bold; color: var(--text-main); margin-bottom: 4px; }
+        .exp-meta { font-size: 12px; color: var(--text-sub); }
+        .exp-amount { font-size: 15px; font-weight: bold; color: #dc2626; text-align: right; }
+        .btn-del-exp { background: none; border: none; color: #94a3b8; font-size: 18px; margin-left: 10px; cursor: pointer; }
+
+        /* ==== 하단 탭 내비게이션 ==== */
+        #bottom-nav { display: flex; height: var(--bottom-nav-height); background: white; border-top: 1px solid #e2e8f0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 1000; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #64748b; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .nav-item .icon { font-size: 20px; margin-bottom: 3px; transition: transform 0.2s; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item.active .icon { transform: scale(1.15); }
+
+        /* AI 챗봇 */
+        #ai-fab { position: absolute; bottom: calc(var(--bottom-nav-height) + 16px); right: 16px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #9333ea, #4f46e5); color: white; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; z-index: 2000; transition: transform 0.2s; }
+        #ai-fab:active { transform: scale(0.9); }
+        #ai-modal { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; display: none; flex-direction: column; overflow: hidden; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        #ai-header { background: linear-gradient(135deg, #9333ea, #4f46e5); color: white; padding: 16px; font-weight: 800; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        #ai-close { cursor: pointer; font-size: 20px; font-weight: bold; padding: 4px; }
+        #ai-chatbox { flex: 1; padding: 16px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 12px; }
+        .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; word-break: break-word; }
+        .chat-user { background: #e2e8f0; color: #0f172a; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-ai { background: var(--primary); color: white; align-self: flex-start; border-bottom-left-radius: 4px; }
+        #ai-input-area { display: flex; padding: 12px; border-top: 1px solid #e2e8f0; background: white; gap: 8px; }
+        #ai-input { flex: 1; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; font-size: 14px; }
+        #ai-send { background: #9333ea; color: white; border: none; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+        /* 토스트 알림 */
+        #toast-msg { position: absolute; bottom: calc(var(--bottom-nav-height) + 20px); left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.9); color: white; padding: 12px 24px; border-radius: 20px; z-index: 4000; display: none; font-size: 14px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2); white-space: nowrap; }
+    </style>
+</head>
+<body>
+
+    <div id="mobile-wrapper">
+        <div id="dday-banner">✈️ 설레는 미국 서부 여행 일정 타이머 로딩 중...</div>
+
+        <div id="filter-bar-container">
+            <div id="filter-bar" style="display: flex; gap: 8px; width: 100%;">
+                <div class="chip active" data-day="all">전체 일정</div>
+            </div>
+        </div>
+
+        <div id="tab-container">
+            
+            <!-- [탭 1] 일정(Schedule) 뷰 -->
+            <div id="view-schedule" class="tab-view active">
+                
+                <!-- 이미지 영역 -->
+                <div style="position: relative; width: 100%; border-radius: 12px; margin-bottom: 20px; overflow: hidden; background: #e2e8f0; display: flex; align-items: center; justify-content: center; min-height: 160px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <img src="image_bda5ba.jpg" alt="금쪽이들의 세계정복" style="width: 100%; display: block; object-fit: cover;" onerror="this.style.display='none'; document.getElementById('img-fallback').style.display='flex';">
+                    <div id="img-fallback" style="display: none; flex-direction: column; align-items: center; color: #64748b; font-size: 13px; padding: 20px; text-align: center;">
+                        <span style="font-size: 24px; margin-bottom: 8px;">🖼️</span>
+                        <span><b>image_bda5ba.jpg</b><br>HTML 파일과 같은 폴더에<br>이미지를 넣으시면 보입니다.</span>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <h3>📌 여행 기본 정보 & 꿀팁</h3>
+                    <ul class="summary-list">
+                        <li><strong>👥 인원/기간:</strong> 성인 4인 / 9박 11일 (26.12.25 ~ 27.01.04)</li>
+                        <li><strong>🛫 출국:</strong> 12/25(금) 18:00 ICN ➔ 11:45 SFO (UA 892 직항)</li>
+                        <li><strong>🛬 귀국:</strong> 1/3(일) 07:25 LAX ➔ SFO 환승 ➔ 1/4(월) 16:15 ICN</li>
+                        <li><strong>🚗 렌터카:</strong> 12/25 SFO 픽업 ➔ 1/2 LAX 반납 (SUV)</li>
+                        <li><strong>💡 국립공원:</strong> 자이언 매표소에서 <b>'연간 패스($250)'</b> 현장 구매!<br>
+                        <span class="highlight-text">⚠️ 오프라인 지도 다운로드 필수!</span></li>
+                    </ul>
+                </div>
+                <div id="schedule-container"></div>
+            </div>
+
+            <!-- [탭 2] 지도(Map) 뷰 -->
+            <div id="view-map" class="tab-view">
+                <div id="map"></div>
+            </div>
+
+            <!-- [탭 3] 체크리스트(Checklist) 뷰 -->
+            <div id="view-checklist" class="tab-view">
+                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">🎒 여행 준비물 체크리스트</h2>
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">* 체크 내역은 내 휴대폰에 자동 저장됩니다.</p>
+                <div id="checklist-render-area"></div>
+            </div>
+
+            <!-- [탭 4] 정산(Expense) 뷰 -->
+            <div id="view-expense" class="tab-view">
+                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 16px;">💸 여행 공금 정산소</h2>
+                
+                <div class="exp-summary">
+                    <div class="exp-label">전체 지출 총액</div>
+                    <div class="exp-value">$<span id="exp-total">0.00</span></div>
+                    <div class="exp-label">1인당 부담액 (평균)</div>
+                    <div class="exp-value small">$<span id="exp-per-person">0.00</span></div>
+                </div>
+
+                <div class="exp-form">
+                    <div class="form-row">
+                        <select id="exp-day" class="form-input" style="flex: 0.6;">
+                            <option value="1일차">1일차</option>
+                            <option value="2일차">2일차</option>
+                            <option value="3일차">3일차</option>
+                            <option value="4일차">4일차</option>
+                            <option value="5일차">5일차</option>
+                            <option value="6일차">6일차</option>
+                            <option value="7일차">7일차</option>
+                            <option value="8일차">8일차</option>
+                            <option value="9일차">9일차</option>
+                        </select>
+                        <input type="text" id="exp-desc" class="form-input" placeholder="내역 (예: 인앤아웃 버거)" style="flex: 1.4;">
+                    </div>
+                    <div class="form-row">
+                        <input type="number" id="exp-amount" class="form-input" placeholder="금액 ($)" step="0.01">
+                        <input type="number" id="exp-people" class="form-input" value="4" placeholder="인원수" min="1">
+                    </div>
+                    <button class="btn-add-exp" onclick="addExpense()">+ 지출 내역 추가</button>
+                </div>
+
+                <div class="exp-list-container">
+                    <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--secondary);">지출 리스트</h3>
+                    <div id="exp-list"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 하단 내비게이션 바 -->
+        <div id="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('schedule', this)">
+                <span class="icon">📅</span>
+                <span>일정</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('map', this)">
+                <span class="icon">🗺️</span>
+                <span>지도</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('checklist', this)">
+                <span class="icon">✅</span>
+                <span>준비물</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('expense', this)">
+                <span class="icon">💸</span>
+                <span>정산</span>
+            </div>
+        </div>
+
+        <!-- AI 챗봇 플로팅 버튼 & 모달 -->
+        <div id="ai-fab" onclick="toggleAiChat()">🤖</div>
+        <div id="ai-modal">
+            <div id="ai-header">
+                <span>✨ AI 금쪽이 가이드</span>
+                <span id="ai-close" onclick="toggleAiChat()">✕</span>
+            </div>
+            <div id="ai-chatbox">
+                <div class="chat-bubble chat-ai">안녕! 나는 금쪽이들의 미국 서부 정복을 도울 AI 가이드야. 궁금한 걸 물어봐! 😎</div>
+            </div>
+            <div id="ai-input-area">
+                <input type="text" id="ai-input" placeholder="질문을 입력하세요..." onkeypress="handleAiInput(event)">
+                <button id="ai-send" onclick="sendAiMessage()">➤</button>
+            </div>
+        </div>
+
+        <!-- 토스트 알림창 -->
+        <div id="toast-msg">주소가 복사되었습니다! ✅</div>
+    </div>
+
+    <script>
+        // -----------------------------------------
+        // 1. 하단 탭 바 전환 로직
+        // -----------------------------------------
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            el.classList.add('active');
+
+            document.querySelectorAll('.tab-view').forEach(view => view.classList.remove('active'));
+            document.getElementById(`view-${tabId}`).classList.add('active');
+
+            const filterBar = document.getElementById('filter-bar-container');
+            if (tabId === 'schedule' || tabId === 'map') {
+                filterBar.style.display = 'flex';
+            } else {
+                filterBar.style.display = 'none';
+            }
+
+            if (tabId === 'map' && map) {
+                google.maps.event.trigger(map, 'resize');
+                updateView();
+            }
+        }
+
+        // -----------------------------------------
+        // 2. D-Day 타이머
+        // -----------------------------------------
+        function updateDday() {
+            const targetDate = new Date('2026-12-25T18:00:00+09:00').getTime(); 
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+
+            if (distance < 0) {
+                document.getElementById("dday-banner").innerHTML = "✈️ 미국 서부 여행이 시작되었습니다! 안전하고 즐거운 여행 되세요!";
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById("dday-banner").innerHTML = 
+                `✈️ 여행 일정까지 D-${days}일 ${String(hours).padStart(2, '0')}시간 ${String(minutes).padStart(2, '0')}분 남았습니다!`;
+        }
+        setInterval(updateDday, 1000);
+        updateDday();
+
+        // -----------------------------------------
+        // 3. 정산(Expense Tracker) 로직
+        // -----------------------------------------
+        let expenses = JSON.parse(localStorage.getItem('usTripExpenses')) || [];
+
+        function renderExpenses() {
+            const listEl = document.getElementById('exp-list');
+            listEl.innerHTML = '';
+            
+            let total = 0;
+            let totalPerPerson = 0;
+
+            if (expenses.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8; font-size:13px;">아직 입력된 지출 내역이 없습니다.</div>';
+            } else {
+                expenses.forEach(exp => {
+                    total += exp.amount;
+                    totalPerPerson += (exp.amount / exp.people);
+
+                    listEl.innerHTML += `
+                        <div class="exp-item">
+                            <div class="exp-info">
+                                <div class="exp-name">${exp.desc}</div>
+                                <div class="exp-meta">${exp.day} | ${exp.people}인 뿜빠이</div>
+                            </div>
+                            <div class="exp-amount">$${exp.amount.toFixed(2)}</div>
+                            <button class="btn-del-exp" onclick="deleteExpense(${exp.id})">×</button>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('exp-total').textContent = total.toFixed(2);
+            document.getElementById('exp-per-person').textContent = totalPerPerson.toFixed(2);
+        }
+
+        function addExpense() {
+            const day = document.getElementById('exp-day').value;
+            const desc = document.getElementById('exp-desc').value;
+            const amount = parseFloat(document.getElementById('exp-amount').value);
+            const people = parseInt(document.getElementById('exp-people').value);
+
+            if (!desc || isNaN(amount) || amount <= 0) {
+                alert("내용과 올바른 금액을 입력해주세요.");
+                return;
+            }
+
+            expenses.push({ id: Date.now(), day, desc, amount, people });
+            localStorage.setItem('usTripExpenses', JSON.stringify(expenses));
+            
+            document.getElementById('exp-desc').value = '';
+            document.getElementById('exp-amount').value = '';
+            
+            renderExpenses();
+            showToast("지출 내역이 추가되었습니다.");
+        }
+
+        function deleteExpense(id) {
+            if(confirm("이 지출 내역을 삭제할까요?")) {
+                expenses = expenses.filter(e => e.id !== id);
+                localStorage.setItem('usTripExpenses', JSON.stringify(expenses));
+                renderExpenses();
+            }
+        }
+        renderExpenses();
+
+        // -----------------------------------------
+        // 4. 체크리스트 로직
+        // -----------------------------------------
+        const checklistData = [
+            { category: "📄 필수 서류 & 결제", items: [
+                { id: "c1", label: "여권 (유효기간 6개월 이상 확인)" },
+                { id: "c2", label: "미국 ESTA 비자 발급 및 출력물" },
+                { id: "c3", label: "국제운전면허증 및 한국면허증 (운전자)" },
+                { id: "c4", label: "해외결제 카드 (트래블월렛/로그 등)" },
+                { id: "c5", label: "소액 달러 현금 (팁/비상용)" }
+            ]},
+            { category: "📱 전자기기", items: [
+                { id: "c6", label: "스마트폰 & 보조배터리" },
+                { id: "c7", label: "차량용 충전기 및 케이블" },
+                { id: "c8", label: "차량용 스마트폰 거치대 (내비용)" },
+                { id: "c9", label: "110V 돼지코 변환 어댑터" }
+            ]},
+            { category: "👕 의류 및 잡화", items: [
+                { id: "c10", label: "겨울용 두꺼운 패딩 (캐니언 고지대 대비)" },
+                { id: "c11", label: "편한 운동화 또는 트레킹화" },
+                { id: "c12", label: "선글라스 및 모자 (사막 햇빛 대비)" },
+                { id: "c13", label: "보습크림 및 립밤 (건조함 대비)" }
+            ]}
+        ];
+
+        function renderChecklist() {
+            const container = document.getElementById('checklist-render-area');
+            container.innerHTML = '';
+            checklistData.forEach(group => {
+                let itemsHtml = '';
+                group.items.forEach(item => {
+                    const isChecked = localStorage.getItem(item.id) === 'true' ? 'checked' : '';
+                    itemsHtml += `
+                        <div class="check-item">
+                            <input type="checkbox" id="${item.id}" ${isChecked} onchange="saveChecklist('${item.id}', this.checked)">
+                            <label for="${item.id}">${item.label}</label>
+                        </div>
+                    `;
+                });
+                container.innerHTML += `<div class="checklist-group"><h3>${group.category}</h3>${itemsHtml}</div>`;
+            });
+        }
+        function saveChecklist(id, isChecked) { localStorage.setItem(id, isChecked); }
+        renderChecklist();
+
+        // -----------------------------------------
+        // 5. 여행 스케줄 및 위경도 데이터
+        // -----------------------------------------
+        const itineraryData = [
+            { id: 1, label: "1일차(12/25)", title: "1일차 | 샌프란시스코 도착", color: "#e11d48", places: [
+                { name: "샌프란시스코 공항 (SFO)", lat: 37.6213, lng: -122.3790, type: "visit", desc: "11:45 도착 및 렌터카 픽업", nextDist: "35분 소요 22.5km" },
+                { name: "샌프란시스코 숙소", lat: 37.8055, lng: -122.4182, type: "sleep", address: "1300 Columbus Ave, San Francisco, CA 94133", desc: "숙소 체크인 및 시내 관광 (1박)" }
+            ]},
+            { id: 2, label: "2일차(12/26)", title: "2일차 | 샌프란시스코 전일", color: "#db2777", places: [
+                { name: "샌프란시스코 숙소", lat: 37.8055, lng: -122.4182, type: "sleep", address: "1300 Columbus Ave, San Francisco, CA 94133", desc: "샌프란시스코 주요 명소 전일 자유 관광 (2박)" }
+            ]},
+            { id: 3, label: "3일차(12/27)", title: "3일차 | SF ➔ 라스베이거스", color: "#9333ea", driveInfo: "총 910km, 약 8시간 30분 소요", shortDrive: "910km (8h 30m)", places: [
+                { name: "샌프란시스코 출발", lat: 37.8055, lng: -122.4182, type: "visit", desc: "아침 일찍 체크아웃 후 장거리 이동 시작", nextDist: "8시간 30분 소요 910km" },
+                { name: "라스베이거스 스트립 호텔", lat: 36.1126, lng: -115.1767, type: "sleep", address: "Las Vegas Strip Area", desc: "저녁 도착 후 스트립 근처 랜덤호텔 체크인 (1박)" }
+            ]},
+            { id: 4, label: "4일차(12/28)", title: "4일차 | 라스베이거스 전일", color: "#7c3aed", places: [
+                { name: "라스베이거스 스트립 호텔", lat: 36.1126, lng: -115.1767, type: "sleep", address: "Las Vegas Strip Area", desc: "라스베이거스 호텔 투어 및 자유 관광 (2박)" }
+            ]},
+            { id: 5, label: "5일차(12/29)", title: "5일차 | 자이언 ➔ 그랜드캐니언", color: "#2563eb", driveInfo: "총 400km, 약 4.5시간 소요", shortDrive: "400km (4h 30m)", places: [
+                { name: "자이언 캐니언 비지터 센터", lat: 37.2000, lng: -112.9868, type: "visit", address: "1 Zion Park Blvd, Springdale, UT", desc: "오전 트레킹 (연간 패스 구매 필수)", nextDist: "4.5시간 소요 400km" },
+                { name: "그랜드캐니언 빌리지 내부", lat: 36.0531, lng: -112.1158, type: "sleep", address: "Grand Canyon Village, AZ", desc: "국립공원 내 숙박 (1박)" }
+            ]},
+            { id: 6, label: "6일차(12/30)", title: "6일차 | 윌리엄스 ➔ 조슈아트리", color: "#059669", driveInfo: "총 615km, 약 6.5시간 소요", shortDrive: "615km (6h 30m)", places: [
+                { name: "윌리엄스 루트66", lat: 35.2495, lng: -112.1910, type: "visit", address: "E Route 66, Williams, AZ", desc: "레트로 감성 마을 관광 및 점심", nextDist: "5.5시간 소요 520km" },
+                { name: "조슈아트리 에어비앤비", lat: 34.1504, lng: -116.3245, type: "sleep", address: "60955 Navajo Trail, Joshua Tree, CA 92252", desc: "오후 사막 이동 및 야간 별 관측 (1박)" }
+            ]},
+            { id: 7, label: "7일차(12/31)", title: "7일차 | 조슈아트리 ➔ LA", color: "#d97706", driveInfo: "총 210km, 약 3시간 소요", shortDrive: "210km (3h 0m)", places: [
+                { name: "조슈아트리 출발", lat: 34.1504, lng: -116.3245, type: "visit", address: "60955 Navajo Trail, Joshua Tree", desc: "오전 조슈아트리 관광", nextDist: "3시간 소요 210km" },
+                { name: "LA 숙소 (미정)", lat: 34.0620, lng: -118.2990, type: "sleep", address: "Los Angeles, CA", desc: "오후 LA 입성 및 연말 카운트다운 (1박)" }
+            ]},
+            { id: 8, label: "8일차(1/1)", title: "8일차 | 로스앤젤레스 전일", color: "#ea580c", places: [
+                { name: "LA 숙소 (미정)", lat: 34.0620, lng: -118.2990, type: "sleep", address: "Los Angeles, CA", desc: "LA 주요 명소 전일 관광 (2박)" }
+            ]},
+            { id: 9, label: "9일차(1/2)", title: "9일차 | LA 마무리 및 반납", color: "#b91c1c", places: [
+                { name: "LA 숙소 (미정)", lat: 34.0620, lng: -118.2990, type: "visit", address: "Los Angeles, CA", desc: "쇼핑 및 마무리 관광", nextDist: "저녁 공항 인근 이동" },
+                { name: "LAX 공항 인근", lat: 33.9455, lng: -118.3980, type: "sleep", address: "Los Angeles Int Airport Area", desc: "공항 근처 숙박, 렌터카 저녁 반납 (3박)" }
+            ]}
+        ];
+
+        let selectedDays = new Set(['all']); 
+
+        function getGMapPlaceUrl(name) { return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`; }
+        function getGMapRouteUrl(places) {
+            if (places.length < 2) return getGMapPlaceUrl(places[0].name);
+            return `https://www.google.com/maps/dir/${places.map(p => `${p.lat},${p.lng}`).join('/')}`;
+        }
+        function showToast(msg) {
+            const toast = document.getElementById('toast-msg');
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        }
+        function copyAddress(address) {
+            const textarea = document.createElement('textarea');
+            textarea.value = address;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast("주소가 복사되었습니다! ✅");
+        }
+
+        // -----------------------------------------
+        // 6. 구글맵 렌더링
+        // -----------------------------------------
+        let map, mapMarkers = [], mapPolylines = [], infoWindow;
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 6, center: { lat: 36.0, lng: -118.0 },
+                mapTypeControl: false, streetViewControl: false, fullscreenControl: false
+            });
+            infoWindow = new google.maps.InfoWindow();
+            
+            renderFilters();
+            renderCards();
+            updateView();
+        }
+
+        function renderFilters() {
+            const bar = document.getElementById('filter-bar');
+            itineraryData.forEach(day => {
+                const btn = document.createElement('div');
+                btn.className = 'chip'; btn.textContent = day.label; btn.dataset.id = day.id;
+                btn.onclick = () => {
+                    if (selectedDays.has('all')) { selectedDays.clear(); document.querySelector('.chip[data-day="all"]').classList.remove('active'); }
+                    if (selectedDays.has(day.id)) {
+                        selectedDays.delete(day.id); btn.classList.remove('active');
+                        if (selectedDays.size === 0) { selectedDays.add('all'); document.querySelector('.chip[data-day="all"]').classList.add('active'); }
+                    } else { selectedDays.add(day.id); btn.classList.add('active'); }
+                    updateView();
+                };
+                bar.appendChild(btn);
+            });
+            document.querySelector('.chip[data-day="all"]').onclick = function() {
+                selectedDays.clear(); selectedDays.add('all');
+                document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active'); updateView();
+            };
+        }
+
+        function renderCards() {
+            const container = document.getElementById('schedule-container');
+            container.innerHTML = '';
+            itineraryData.forEach(day => {
+                const card = document.createElement('div');
+                card.className = 'day-card'; card.id = `card-day-${day.id}`;
+                const driveBadgeHtml = day.driveInfo ? `<div class="drive-badge">🛣️ ${day.driveInfo}</div>` : '';
+                let placesHtml = `<div class="timeline">`;
+                day.places.forEach((p, idx) => {
+                    placesHtml += `
+                        <div class="timeline-item">
+                            <div class="timeline-number">${p.type === 'sleep' ? '🏠' : (idx + 1)}</div>
+                            <div class="timeline-content">
+                                <div class="timeline-info">
+                                    <div class="timeline-title">${p.name}</div>
+                                    <div class="timeline-desc">${p.desc}</div>
+                                    ${p.address ? `<div style="font-size:11px; color:#94a3b8; margin-top:2px;">${p.address}</div>` : ''}
+                                    <div style="margin-top:8px; display:flex; gap:6px;">
+                                        <a href="${getGMapPlaceUrl(p.name)}" target="_blank" class="btn-gmap">📍 맵 보기</a>
+                                        ${p.address ? `<button onclick="copyAddress('${p.address.replace(/'/g, "\\'")}')" class="btn-copy">📋 주소</button>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            ${idx < day.places.length - 1 && p.nextDist ? `<div class="timeline-distance">🚗 ${p.nextDist}</div>` : ''}
+                        </div>`;
+                });
+                placesHtml += `</div>`;
+                card.innerHTML = `
+                    <div class="day-header">
+                        <div class="day-title" style="color: ${day.color}">${day.title}</div>
+                        <a href="${getGMapRouteUrl(day.places)}" target="_blank" class="btn-route" style="color: ${day.color}; border-color: ${day.color};">당일 길찾기</a>
+                    </div>
+                    ${driveBadgeHtml}
+                    ${placesHtml}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function getDynamicMarkerIcon(type, index) {
+            const bgColor = type === 'sleep' ? '#2563eb' : '#f59e0b'; 
+            const text = type === 'sleep' ? '🏠' : (index + 1);       
+            const fontSize = type === 'sleep' ? '14' : '18';          
+            const svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 36 48">
+                    <path fill="${bgColor}" stroke="#ffffff" stroke-width="2.5" d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 30 18 30s18-16.5 18-30C36 8.06 27.94 0 18 0z"/>
+                    <text x="18" y="24" font-size="${fontSize}" font-weight="900" text-anchor="middle" fill="white" font-family="sans-serif">${text}</text>
+                </svg>`;
+            return { url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg), scaledSize: new google.maps.Size(32, 42), anchor: new google.maps.Point(16, 42) };
+        }
+
+        function updateView() {
+            if (!map) return;
+            mapMarkers.forEach(m => m.setMap(null)); mapPolylines.forEach(l => l.setMap(null));
+            mapMarkers = []; mapPolylines = [];
+            let bounds = new google.maps.LatLngBounds(), hasPoints = false;
+            const isAll = selectedDays.has('all');
+
+            itineraryData.forEach(day => {
+                const card = document.getElementById(`card-day-${day.id}`);
+                if (isAll || selectedDays.has(day.id)) {
+                    if (card) card.classList.remove('hidden');
+                    let dayCoords = [];
+                    day.places.forEach((p, index) => {
+                        const pos = { lat: p.lat, lng: p.lng };
+                        dayCoords.push(pos); bounds.extend(pos); hasPoints = true;
+
+                        const marker = new google.maps.Marker({
+                            position: pos, map: map, icon: getDynamicMarkerIcon(p.type, index), title: p.name, zIndex: 100
+                        });
+                        marker.addListener("click", () => {
+                            infoWindow.setContent(`<div style="text-align:center; padding:5px;"><b>${p.name}</b><br><span style="font-size:12px;">${day.label}</span></div>`);
+                            infoWindow.open(map, marker);
+                        });
+                        mapMarkers.push(marker);
+                    });
+
+                    if (dayCoords.length > 1) {
+                        const polyline = new google.maps.Polyline({
+                            path: dayCoords, geodesic: true, strokeColor: day.color, strokeOpacity: 0, strokeWeight: 3,
+                            icons: [{ icon: { path: 'M 0,-1 L 0,1', strokeOpacity: 0.8, scale: 3 }, offset: '0', repeat: '15px' }], map: map
+                        });
+                        mapPolylines.push(polyline);
+
+                        if (day.shortDrive) {
+                            const midLat = (dayCoords[0].lat + dayCoords[dayCoords.length - 1].lat) / 2;
+                            const midLng = (dayCoords[0].lng + dayCoords[dayCoords.length - 1].lng) / 2;
+                            const badgeSvg = `
+                                <svg xmlns="http://www.w3.org/2000/svg" width="160" height="30">
+                                    <rect x="0" y="0" width="160" height="30" rx="15" fill="#0f172a" fill-opacity="0.9" stroke="#ffffff" stroke-width="2"/>
+                                    <text x="80" y="20" font-size="12" font-weight="bold" fill="white" text-anchor="middle" font-family="sans-serif">🚗 ${day.shortDrive}</text>
+                                </svg>`;
+                            const badgeMarker = new google.maps.Marker({
+                                position: { lat: midLat, lng: midLng }, map: map,
+                                icon: { url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(badgeSvg), anchor: new google.maps.Point(80, 15) },
+                                zIndex: 90
+                            });
+                            mapMarkers.push(badgeMarker);
+                        }
+                    }
+                } else {
+                    if (card) card.classList.add('hidden');
+                }
+            });
+
+            if (hasPoints) {
+                map.fitBounds(bounds);
+                const listener = google.maps.event.addListener(map, "idle", function() { 
+                    if (map.getZoom() > 14) map.setZoom(14); 
+                    google.maps.event.removeListener(listener); 
+                });
+            }
+        }
+
+        // AI 챗봇
+        function toggleAiChat() {
+            const modal = document.getElementById('ai-modal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+        function sendAiMessage() {
+            const input = document.getElementById('ai-input');
+            const chatbox = document.getElementById('ai-chatbox');
+            if(input.value.trim() === '') return;
+            chatbox.innerHTML += `<div class="chat-bubble chat-user">${input.value}</div>`;
+            input.value = '';
+            setTimeout(() => {
+                chatbox.innerHTML += `<div class="chat-bubble chat-ai">친구들의 완벽한 미국 로드트립을 위해 최선을 다해 정보를 찾고 있어요! 😎</div>`;
+                chatbox.scrollTop = chatbox.scrollHeight;
+            }, 800);
+        }
+        function handleAiInput(e) { if(e.key === 'Enter') sendAiMessage(); }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCKPPMv6Ml-e04zX3nmynv5adLIuSn-6ck&callback=initMap"></script>
+</body>
+</html>
