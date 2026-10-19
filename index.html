@@ -715,7 +715,7 @@
 
             // 분 단위를 삭제하고 일, 시간만 BOLD로 크게 강조
             document.getElementById("dday-banner").innerHTML = 
-                `금쪽이들 미국여행까지 <span style="font-size:22px; font-weight:900;">D-${days}일 ${String(hours).padStart(2, '0')}시간</span> 남았습니다!`;
+                `금쪽이들 미국여행까지 <span style="font-size:22px; font-weight:900;">D-${days}일 ${String(hours).padStart(2, '0')}시간</span>!`;
         }
         setInterval(updateDday, 1000);
         updateDday();
