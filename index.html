@@ -68,8 +68,8 @@
             color: white;
             text-align: center;
             padding: 16px 10px;
-            font-size: 18px;
-            font-weight: 800;
+            font-size: 19px;
+            font-weight: 900;
             letter-spacing: 0.5px;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -115,15 +115,16 @@
             box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
         }
 
-        /* 날씨 바 - 하단 짤림 방지 수정 */
+        /* 날씨 바 */
         #weather-bar {
             display: flex;
             gap: 8px;
             overflow-x: auto;
-            padding: 12px 16px 16px 16px;
+            padding: 12px 16px 20px 16px;
             background: #f1f5f9;
             -webkit-overflow-scrolling: touch;
             align-items: center;
+            min-height: 56px;
         }
         #weather-bar::-webkit-scrollbar { display: none; }
         .weather-widget {
@@ -133,11 +134,12 @@
             padding: 6px 12px;
             border-radius: 20px;
             border: 1px solid #e2e8f0;
-            font-size: 12px;
-            gap: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            gap: 6px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             flex-shrink: 0;
-            height: 32px;
+            height: 36px;
         }
 
         /* 탭 뷰 컨테이너 */
@@ -232,7 +234,6 @@
         .check-item input[type="checkbox"] { width: 20px; height: 20px; margin-right: 12px; accent-color: var(--primary); }
         .check-item label { font-size: 14px; color: var(--text-main); flex: 1; line-height: 1.4; cursor: pointer; }
         .check-item input[type="checkbox"]:checked + label { text-decoration: line-through; color: #94a3b8; }
-        /* 수정된 삭제 버튼 (-) */
         .btn-del-item { background: #fee2e2; border: 1px solid #fca5a5; color: #ef4444; width: 26px; height: 26px; border-radius: 50%; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px; font-weight: bold; padding-bottom: 3px; box-sizing: border-box; }
 
         /* ==== [탭 4] 정산 뷰 ==== */
@@ -311,15 +312,16 @@
                 
                 <!-- 날씨 바 -->
                 <div id="weather-bar">
-                    <div style="font-size:12px; color:#64748b; padding:6px;">🌤️ 날씨 정보 불러오는 중...</div>
+                    <div style="font-size:13px; color:#64748b; padding:6px; font-weight:600;">🌤️ 날씨 정보 불러오는 중...</div>
                 </div>
 
-                <!-- 이미지 영역 -->
-                <div style="position: relative; width: calc(100% - 32px); margin: 16px auto; border-radius: 16px; overflow: hidden; background: #e2e8f0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                    <img src="image_bda5ba.jpg" alt="금쪽이들의 세계정복" style="width: 100%; display: block; object-fit: cover;" onerror="this.style.display='none'; document.getElementById('img-fallback').style.display='flex';">
-                    <div id="img-fallback" style="display: none; flex-direction: column; align-items: center; color: #64748b; font-size: 13px; padding: 40px 20px; text-align: center;">
+                <!-- 이미지 영역: 자동 확장자 복구 기능 추가 -->
+                <div style="position: relative; width: calc(100% - 32px); margin: 0 auto 16px auto; border-radius: 16px; overflow: hidden; background: #e2e8f0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); min-height: 120px;">
+                    <img src="./4man_trip.jpg" data-fallback-idx="-1" alt="금쪽이들의 세계정복" style="width: 100%; display: block; object-fit: cover;" onerror="handleImageError(this)">
+                    
+                    <div id="img-fallback" style="display: none; flex-direction: column; align-items: center; color: #64748b; font-size: 13px; padding: 40px 20px; text-align: center; width:100%;">
                         <span style="font-size: 24px; margin-bottom: 8px;">🖼️</span>
-                        <span><b>image_bda5ba.jpg</b><br>HTML 파일과 같은 위치에<br>이미지를 업로드해주세요.</span>
+                        <span><b>4man_trip.jpg</b><br>이미지를 깃허브에 추가해주세요.<br>확장자 자동 검색에 실패했습니다.</span>
                     </div>
                 </div>
                 
@@ -345,7 +347,7 @@
             <!-- [탭 3] 체크리스트(Checklist) 뷰 -->
             <div id="view-checklist" class="tab-view">
                 <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">🎒 여행 준비물 체크리스트</h2>
-                <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">* - 버튼을 누르면 체크리스트에서 삭제됩니다.</p>
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">* - 버튼을 누르면 체크리스트에서 개별 삭제됩니다.</p>
                 <div id="checklist-render-area"></div>
             </div>
 
@@ -475,6 +477,31 @@
     </div>
 
     <script>
+        // -----------------------------------------
+        // 이미지 확장자 복구 (Fallback) 시스템
+        // -----------------------------------------
+        function handleImageError(img) {
+            // 다양한 확장자 및 경로 조합 시도
+            const fallbacks = [
+                './4man_trip.JPG', 
+                './4man_trip.png', 
+                './4man_trip.PNG', 
+                './4man_trip.jpeg'
+            ];
+            
+            let currentIdx = parseInt(img.getAttribute('data-fallback-idx') || '-1');
+            currentIdx++;
+            
+            if (currentIdx < fallbacks.length) {
+                img.setAttribute('data-fallback-idx', currentIdx);
+                img.src = fallbacks[currentIdx]; // 다음 확장자로 재시도
+            } else {
+                // 모두 실패 시 안내문구 표시
+                img.style.display = 'none';
+                document.getElementById('img-fallback').style.display = 'flex';
+            }
+        }
+
         // -----------------------------------------
         // 전역 모달 상태 및 유틸 함수
         // -----------------------------------------
@@ -635,7 +662,7 @@
                         bar.innerHTML += `
                             <div class="weather-widget">
                                 <b>${city.name}</b>
-                                <img src="${icon}" style="width:24px; height:24px; margin:0 -4px;">
+                                <img src="${icon}" style="width:28px; height:28px; margin:0 -4px;">
                                 <span>${temp}°C</span>
                             </div>
                         `;
@@ -645,7 +672,7 @@
                 }
             }
             if(bar.innerHTML === '') {
-                bar.innerHTML = '<div style="font-size:12px; color:#64748b; padding:6px;">날씨 정보를 불러오지 못했습니다.</div>';
+                bar.innerHTML = '<div style="font-size:13px; color:#64748b; padding:6px; font-weight:600;">날씨 정보를 불러오지 못했습니다.</div>';
             }
         }
         document.addEventListener("DOMContentLoaded", fetchWeather);
@@ -686,8 +713,9 @@
             const days = Math.floor(distance / (1000 * 60 * 60 * 24));
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
 
+            // 분 단위를 삭제하고 일, 시간만 BOLD로 크게 강조
             document.getElementById("dday-banner").innerHTML = 
-                `금쪽이들 미국여행까지 <span>D-${days}일 ${String(hours).padStart(2, '0')}시간</span> 남았습니다!`;
+                `금쪽이들 미국여행까지 <span style="font-size:22px; font-weight:900;">D-${days}일 ${String(hours).padStart(2, '0')}시간</span> 남았습니다!`;
         }
         setInterval(updateDday, 1000);
         updateDday();
